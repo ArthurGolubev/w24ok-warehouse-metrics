@@ -1,13 +1,13 @@
 import os
-import requests
 import redis
+import requests
 
-from time import sleep
 from loguru import logger
 from bs4 import BeautifulSoup
-from selenium import webdriver
+
+
 from ReportError import ReportError
-from datetime import datetime, timedelta
+from datetime import datetime
 from pathlib import Path
 
 class Report:
@@ -16,21 +16,8 @@ class Report:
     def __init__(self, period=None) -> None:
         
         self.warh = os.getenv('WARH')
-        options = webdriver.ChromeOptions()
-        options.add_argument('--ignore-ssl-errors=yes')
-        options.add_argument('--ignore-certificate-errors')
-        options.add_argument('--no-sandbox')
-        options.add_argument('--disable-gpu')
-        options.add_argument('--disable-dev-shm-usage')
-        options.page_load_strategy = 'eager'
         self.download_path = f'/data/cache/{self.warh}'
         Path(self.download_path).mkdir(exist_ok=True)
-        # options.add_experimental_option('prefs', {"download.default_directory" : self.download_path})
-        # self.browser    = webdriver.Chrome(executable_path='/celery_app/chromedriver', options=options)
-        self.browser = webdriver.Remote(command_executor='http://w24ok-web-selenium-svc:4444/wd/hub', options=options)
-        self.browser.set_page_load_timeout(120)
-        self.browser.set_script_timeout(120)
-        logger.info(f'hello from {__name__} -> {self.browser=}')
         self.clear_data_ = []
         self.period=period
         self.decreases = {}
@@ -41,54 +28,42 @@ class Report:
 
     def get_report(self):
         logger.info(f'\n<b>{self.task_name}</b>\n<i>Process start</i>\nPeriod:\n{self.period}\n#w24ok #Reports')
-        try:
-            # self.browser.get('https://google.com')
-            self.browser.get('https://store.24-ok.ru/site/login')
-            login = self.browser.find_element('xpath' ,'//input[@id="loginform-username"]')
-            password = self.browser.find_element('xpath', '//input[@id="loginform-password"]')
-            button = self.browser.find_element('xpath', '//button[@name="login-button"]')
-            login.send_keys(os.getenv(f'{self.warh}0'))
-            password.send_keys(os.getenv(f'{self.warh}1'))
-            button.click()
-            sleep(5)
-            self.browser.get('https://store.24-ok.ru/report/issue')
-            sleep(5)
-            if self.period:
-                date_start = self.browser.find_element("xpath", "//input[@id='filterreport-date_start']")
-                date_end = self.browser.find_element("xpath", "//input[@id='filterreport-date_end']")
-                create_button_elem = self.browser.find_element("xpath", "//button[@value='create']")
-                date_start.clear()
-                date_end.clear()
-                date_end.send_keys(self.period["end"].strftime('%d.%m.%Y'))
-                date_start.send_keys(self.period["start"].strftime('%d.%m.%Y'))
-                create_button_elem.click()
-                sleep(10)
-            load_button_elem = self.browser.find_element("xpath", "//button[@value='xls']")
-            logger.info(f'{load_button_elem=}')
-            load_button_elem.click()
-            download = False
-            today = datetime.today()
-            y = today.year
-            m = today.month
-            d = today.day
-            if m < 10: m = f'0{m}'
-            if d < 10: d = f'0{d}'
-            start_time = datetime.now()
-            # Тут проверку можно переработать на CronJob из Kubernetes
-            while(not download and not (datetime.now() > start_time + timedelta(minutes=3))):
-                sleep(5)
-                for file_ in os.listdir(self.download_path):
-                    if file_.startswith(f'Data-{y}{m}{d}') and file_.endswith('.xls'):
-                        download = True
-                        self.filename = file_
-                        self.browser.get('https://store.24-ok.ru/site/logout')
-        except Exception as e:
-            logger.error(f'{e=}')
-            # input('pause')
-            raise ReportError(where='get_report', Traceback=e, period=self.period)
-        finally:
-            sleep(15)
-            self.browser.quit()
+        today = datetime.today()
+        session = requests.Session()
+        login_url = 'https://store.24-ok.ru/site/login'
+        logout_url = 'https://store.24-ok.ru/site/logout'
+
+        if self.period:
+            end = self.period["end"].strftime('%d.%m.%Y')
+            start = self.period["start"].strftime('%d.%m.%Y')
+        else:
+            end = today.strftime('%d.%m.%Y')
+            start = today.strftime('%d.%m.%Y')
+        issue = f'https://store.24-ok.ru/report/issue?FilterReport%5Bdate_start%5D={start}&FilterReport%5Bdate_end%5D={end}&soffice=60&button=xls'
+        
+        response = session.get(login_url) # 1. захожу, чтобы получить csrf
+        soup = BeautifulSoup(response.content, 'html.parser')
+        csrf = soup.find('input', {'name': '_csrf'})['value']
+
+        payload_data = {
+            "_csrf": csrf,
+            "LoginForm[username]": os.getenv(f'{self.warh}0'),
+            "LoginForm[password]": os.getenv(f'{self.warh}1')
+        }
+
+        session.post(login_url, data=payload_data) # 2. отправляю форму с данными
+        
+        resp3 = session.get(issue) # 3. отправляю запрос на скачивание документа .xls
+        y = today.year
+        m = today.month
+        d = today.day
+        if m < 10: m = f'0{m}'
+        if d < 10: d = f'0{d}'
+        self.filename = self.download_path + f'Data-{y}{m}{d}-{self.warh}.xls'
+        with open(self.filename, 'wb') as f:
+            f.write(resp3.content)
+
+        session.get(logout_url) # 4. разлогиниваюсь на сайте
 
 
     def clear_data(self):

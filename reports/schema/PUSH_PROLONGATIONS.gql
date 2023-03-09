@@ -1,0 +1,5 @@
+mutation PUSH_PROLONGATION($prolongations: [[String!]], $warh: String!){
+    pushProlongations(prolongations: $prolongations, warh: $warh){
+        success
+    }
+}

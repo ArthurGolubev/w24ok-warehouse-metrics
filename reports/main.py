@@ -2,7 +2,7 @@ import os
 import redis
 
 from loguru import logger
-from Report import Report
+from ReportV2 import Report
 from datetime import datetime, timedelta
 
 def archive_report(warh):
@@ -35,9 +35,11 @@ if __name__ == "__main__":
             r = Report(period=period)
             r.get_report()
             r.clear_data()
+            r.send_data()
             logger.info(f"{r.clear_data_=}")
     else:
         r = Report()
         r.get_report()
         r.clear_data()
+        r.send_data()
         logger.info(f"{r.clear_data_=}")

@@ -1,0 +1,5 @@
+mutation PUSH_DAILYREPORT($warh: String!, $clearData: [[String!]]){
+    pushTransactions(warh: $warh clearData: $clearData){
+        success
+    }
+}

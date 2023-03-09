@@ -30,9 +30,9 @@ params = {
 
 handler = NotificationHandler('telegram', defaults=params)
 # logger.add(handler, level="DEBUG", enqueue=True)
-if (os.getenv('PROD_ENV') == 'True'):
-    logger.add('/volume/logs/django.json', format="{time} {level} {message}", level="DEBUG", rotation="1 MB", compression="zip", serialize=True, enqueue=True)
-    logger.add('/volume/logs/django.log', format="{time} {level} {message}", level="DEBUG", rotation="1 MB", compression="zip", enqueue=True)
+# if (os.getenv('PROD_ENV') == 'True'):
+#     logger.add('/volume/logs/django.json', format="{time} {level} {message}", level="DEBUG", rotation="1 MB", compression="zip", serialize=True, enqueue=True)
+#     logger.add('/volume/logs/django.log', format="{time} {level} {message}", level="DEBUG", rotation="1 MB", compression="zip", enqueue=True)
 
 
 
@@ -47,7 +47,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.getenv('DJANGO_SECRET')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = True
 
 env_allowed_hosts = os.getenv("ALLOWED_HOSTS", "127.0.0.1")
 ALLOWED_HOSTS = env_allowed_hosts.split(' ')
@@ -63,7 +63,7 @@ GRAPHENE = {
 CACHES = {
     "default": {
         "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION": "redis://redis:6379/0",
+        "LOCATION": "redis://redis-service-node-port:6379/0",
         "OPTIONS": {
             "CLIENT_CLASS": "django_redis.client.DefaultClient",
         },
@@ -86,6 +86,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -113,6 +114,7 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'w24ok2.wsgi.application'
+ASGI_APPLICATION = 'w24ok2.asgi.application'
 
 AUTHENTICATION_BACKENDS = [
     'graphql_jwt.backends.JSONWebTokenBackend',
@@ -122,10 +124,10 @@ AUTHENTICATION_BACKENDS = [
 # Database
 # https://docs.djangoproject.com/en/3.2/ref/settings/#databases
 
-logger.warning(f'{os.getenv("W24OK_DB_PASSWORD")=}')
-logger.warning(f'{os.getenv("W24OK_DB_USER")=}')
-logger.warning(f'{os.getenv("W24OK_DB_NAME")=}')
-logger.warning(f'{os.getenv("HOST_DB")=}')
+# logger.warning(f'{os.getenv("W24OK_DB_PASSWORD")=}')
+# logger.warning(f'{os.getenv("W24OK_DB_USER")=}')
+# logger.warning(f'{os.getenv("W24OK_DB_NAME")=}')
+# logger.warning(f'{os.getenv("HOST_DB")=}')
 
 DATABASES = {
     'default': {
@@ -183,11 +185,16 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/3.2/howto/static-files/
 
-STATIC_URL = '/w24ok-web/static/'
+STATIC_URL = '/static/'
+# STATIC_URL = 'static-cdn-local/'
 STATICFILES_DIRS = [
-    os.path.join(BASE_DIR, 'staticfiles')
+    os.path.join(BASE_DIR, 'staticfiles'),
+    os.path.join(BASE_DIR, 'static-cdn-local')
 ]
 STATIC_ROOT = os.path.join(BASE_DIR, 'static-cdn-local')
+logger.info(f'{STATIC_ROOT=}')
+logger.info(f'{BASE_DIR=}')
+logger.info(f'{os.getcwd()=}')
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/3.2/ref/settings/#default-auto-field

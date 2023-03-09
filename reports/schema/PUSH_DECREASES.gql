@@ -1,0 +1,5 @@
+mutation PUSH_DECREASES($decreases: [[String!]], $warh: String!){
+    pushDecreases(decreases: $decreases, warh: $warh){
+        success
+    }
+}

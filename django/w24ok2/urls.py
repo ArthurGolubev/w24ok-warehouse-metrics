@@ -20,8 +20,14 @@ from django.views.generic import TemplateView
 from django.views.decorators.csrf import csrf_exempt
 from graphene_django.views import GraphQLView
 
+# urlpatterns = [
+#     path(os.getenv("APP_URL", '') + 'admin/', admin.site.urls),
+#     path(os.getenv("APP_URL", '') + '', TemplateView.as_view(template_name='react.html')),
+#     path(os.getenv("APP_URL", '') + 'graphql/', csrf_exempt(GraphQLView.as_view(graphiql=True)))
+# ]
+
 urlpatterns = [
-    path(os.getenv("APP_PREFIX", '') + 'admin/', admin.site.urls),
-    path(os.getenv("APP_PREFIX", '') + '', TemplateView.as_view(template_name='react.html')),
-    path(os.getenv("APP_PREFIX", '') + 'graphql/', csrf_exempt(GraphQLView.as_view(graphiql=True)))
+    path('', TemplateView.as_view(template_name='react.html')),
+    path('admin/', admin.site.urls),
+    path('graphql/', csrf_exempt(GraphQLView.as_view(graphiql=True)))
 ]
