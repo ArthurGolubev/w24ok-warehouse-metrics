@@ -17,7 +17,7 @@ class Report:
         
         self.warh = os.getenv('WARH')
         self.download_path = f'/data/cache/{self.warh}'
-        Path(self.download_path).mkdir(exist_ok=True)
+        Path(self.download_path).mkdir(parents=True, exist_ok=True)
         self.clear_data_ = []
         self.period=period
         self.decreases = {}
@@ -29,47 +29,48 @@ class Report:
     def get_report(self):
         logger.info(f'\n<b>{self.task_name}</b>\n<i>Process start</i>\nPeriod:\n{self.period}\n#w24ok #Reports')
         today = datetime.today()
-        session = requests.Session()
-        login_url = 'https://store.24-ok.ru/site/login'
-        logout_url = 'https://store.24-ok.ru/site/logout'
+        with requests.Session() as session:
+            login_url = 'https://store.24-ok.ru/site/login'
+            logout_url = 'https://store.24-ok.ru/site/logout'
 
-        if self.period:
-            end = self.period["end"].strftime('%d.%m.%Y')
-            start = self.period["start"].strftime('%d.%m.%Y')
-        else:
-            end = today.strftime('%d.%m.%Y')
-            start = today.strftime('%d.%m.%Y')
-        issue = f'https://store.24-ok.ru/report/issue?FilterReport%5Bdate_start%5D={start}&FilterReport%5Bdate_end%5D={end}&soffice=60&button=xls'
-        
-        response = session.get(login_url) # 1. захожу, чтобы получить csrf
-        soup = BeautifulSoup(response.content, 'html.parser')
-        csrf = soup.find('input', {'name': '_csrf'})['value']
+            if self.period:
+                end = self.period["end"]
+                start = self.period["start"]
+            else:
+                end = today.strftime('%d.%m.%Y')
+                start = today.strftime('%d.%m.%Y')
+            issue = f'https://store.24-ok.ru/report/issue?FilterReport%5Bdate_start%5D={start}&FilterReport%5Bdate_end%5D={end}&soffice=60&button=xls'
+            
+            response = session.get(login_url) # 1. захожу, чтобы получить csrf
+            soup = BeautifulSoup(response.content, 'html.parser')
+            csrf = soup.find('input', {'name': '_csrf'})['value']
 
-        payload_data = {
-            "_csrf": csrf,
-            "LoginForm[username]": os.getenv(f'{self.warh}0'),
-            "LoginForm[password]": os.getenv(f'{self.warh}1')
-        }
+            payload_data = {
+                "_csrf": csrf,
+                "LoginForm[username]": os.getenv(f'{self.warh}0'),
+                "LoginForm[password]": os.getenv(f'{self.warh}1')
+            }
 
-        session.post(login_url, data=payload_data) # 2. отправляю форму с данными
-        
-        resp3 = session.get(issue) # 3. отправляю запрос на скачивание документа .xls
-        y = today.year
-        m = today.month
-        d = today.day
-        if m < 10: m = f'0{m}'
-        if d < 10: d = f'0{d}'
-        self.filename = self.download_path + f'Data-{y}{m}{d}-{self.warh}.xls'
-        with open(self.filename, 'wb') as f:
-            f.write(resp3.content)
+            session.post(login_url, data=payload_data) # 2. отправляю форму с данными
+            
+            resp3 = session.get(issue) # 3. отправляю запрос на скачивание документа .xls
+            y = today.year
+            m = today.month
+            d = today.day
+            if m < 10: m = f'0{m}'
+            if d < 10: d = f'0{d}'
+            self.filename = f'Data-{y}{m}{d}-{self.warh}.xls'
+            with open(os.path.join(self.download_path, self.filename), 'wb') as f:
+                f.write(resp3.content)
+                logger.info(f'{resp3.text=}')
 
-        session.get(logout_url) # 4. разлогиниваюсь на сайте
+            session.get(logout_url) # 4. разлогиниваюсь на сайте
 
 
     def clear_data(self):
         logger.info('start clear_data')
         try:
-            with open(f'{self.download_path}/{self.filename}', 'r') as f:
+            with open(os.path.join(self.download_path, self.filename), 'r') as f:
                 soup = BeautifulSoup(f, 'html.parser')
                 rows = soup.find_all('tr')
                 

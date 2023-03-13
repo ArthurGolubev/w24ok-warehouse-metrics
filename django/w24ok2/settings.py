@@ -189,12 +189,8 @@ STATIC_URL = '/static/'
 # STATIC_URL = 'static-cdn-local/'
 STATICFILES_DIRS = [
     os.path.join(BASE_DIR, 'staticfiles'),
-    os.path.join(BASE_DIR, 'static-cdn-local')
 ]
 STATIC_ROOT = os.path.join(BASE_DIR, 'static-cdn-local')
-logger.info(f'{STATIC_ROOT=}')
-logger.info(f'{BASE_DIR=}')
-logger.info(f'{os.getcwd()=}')
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/3.2/ref/settings/#default-auto-field
