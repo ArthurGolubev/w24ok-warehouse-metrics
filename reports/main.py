@@ -6,7 +6,7 @@ from ReportV2 import Report
 from datetime import datetime, timedelta
 
 def archive_report(warh):
-    redis_ = redis.Redis(host='redis-service-node-port', port='6379', db='0')
+    redis_ = redis.Redis(host='redis-svc', port='6379', db='0')
     re = redis_.hgetall(f"{warh}")
     if re:
         logger.info(f"{re=}")
