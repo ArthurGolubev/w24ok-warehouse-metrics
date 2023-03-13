@@ -138,7 +138,7 @@ class Report:
                 r = requests.post(endpoint, json={"query": mutation, "variables": {"prolongations": list(self.prolongations.items()), "warh": self.warh }}, headers=headers)
                 if not r.status_code == 200 or r.json().get('errors'):
                     raise ReportError(where='send_data / Prolongation', message=r.json(), period=self.period)
-            if self.period: redis.Redis(host='redis-service-node-port', port='6379', db='0').hmset(f"{self.warh}", {"start": self.period["end"].strftime("%Y/%m/%d")} )
+            if self.period: redis.Redis(host='redis-svc', port='6379', db='0').hmset(f"{self.warh}", {"start": self.period["end"].strftime("%Y/%m/%d")} )
             logger.success(f'\n<b>{self.task_name}</b>\n<i>Process end</i>\nPeriod:\n{self.period}\n#w24ok #Reports')
 
         except Exception as e:
