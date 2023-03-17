@@ -63,7 +63,7 @@ GRAPHENE = {
 CACHES = {
     "default": {
         "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION": "redis://redis-service-node-port:6379/0",
+        "LOCATION": "redis://redis-svc:6379/0",
         "OPTIONS": {
             "CLIENT_CLASS": "django_redis.client.DefaultClient",
         },
