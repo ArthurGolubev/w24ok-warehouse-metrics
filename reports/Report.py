@@ -63,6 +63,14 @@ class Report:
                 date_start.send_keys(self.period["start"].strftime('%d.%m.%Y'))
                 create_button_elem.click()
                 sleep(10)
+            else:
+                date_start = self.browser.find_element("xpath", "//input[@id='filterreport-date_start']")
+                create_button_elem = self.browser.find_element("xpath", "//button[@value='create']")
+                date_start.clear()
+                date_start.send_keys((self.period["start"] - timedelta(days=3)).strftime('%d.%m.%Y'))
+                create_button_elem.click()
+                sleep(10)
+
             load_button_elem = self.browser.find_element("xpath", "//button[@value='xls']")
             logger.info(f'{load_button_elem=}')
             load_button_elem.click()
